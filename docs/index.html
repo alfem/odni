@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesador de DNI - Offline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .side-by-side {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .side-by-side {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+
+        .upload-zone.active {
+            background: #e7f3ff;
+            border-color: #667eea;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 20px 0;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+        }
+
+        #cropCanvasAnverso,
+        #cropCanvasReverso {
+            cursor: crosshair;
+        }
+
+        .crop-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preview-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .text-overlay-config {
+            margin: 20px 0;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        #showAreasLabel input[type="checkbox"] {
+            filter: brightness(0) invert(0);
+        }
+
+        #showAreasLabel.active input[type="checkbox"] {
+            filter: brightness(0) invert(1);
+        }
+
+        .blur-areas {
+            margin: 20px 0;
+        }
+
+        .blur-area-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .blur-area-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #6c757d;
+        }
+
+        .step.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .step-line {
+            width: 60px;
+            height: 3px;
+            background: #e9ecef;
+        }
+
+        .step-line.completed {
+            background: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Procesador de DNI</h1>
+            <p class="subtitle">Difumina áreas sensibles y añade marcas de agua - 100% Offline</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Indicador de pasos -->
+            <div class="step-indicator">
+                <div class="step active" id="step1">1</div>
+                <div class="step-line" id="line1"></div>
+                <div class="step" id="step2">2</div>
+                <div class="step-line" id="line2"></div>
+                <div class="step" id="step3">3</div>
+                <div class="step-line" id="line3"></div>
+                <div class="step" id="step4">4</div>
+            </div>
+
+            <!-- Paso 1: Cargar imágenes -->
+            <div class="card" id="uploadSection">
+                <h2>📤 Paso 1: Cargar imágenes del DNI</h2>
+                <div class="side-by-side">
+                    <div>
+                        <h3 style="margin-bottom: 10px; color: #495057;">Anverso (Cara frontal)</h3>
+                        <div class="upload-zone" id="uploadAnverso" onclick="document.getElementById('fileAnverso').click()">
+                            <p style="font-size: 2em; margin-bottom: 10px;">📄</p>
+                            <p><strong>Click para subir anverso</strong></p>
+                            <p style="font-size: 0.9em; color: #6c757d; margin-top: 5px;">o arrastra la imagen aquí</p>
+                        </div>
+                        <input type="file" id="fileAnverso" accept="image/*">
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 10px; color: #495057;">Reverso (Cara trasera)</h3>
+                        <div class="upload-zone" id="uploadReverso" onclick="document.getElementById('fileReverso').click()">
+                            <p style="font-size: 2em; margin-bottom: 10px;">📄</p>
+                            <p><strong>Click para subir reverso</strong></p>
+                            <p style="font-size: 0.9em; color: #6c757d; margin-top: 5px;">o arrastra la imagen aquí</p>
+                        </div>
+                        <input type="file" id="fileReverso" accept="image/*">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Recortar anverso -->
+            <div class="card hidden" id="cropAnversoSection">
+                <h2>✂️ Paso 2: Recortar anverso (opcional)</h2>
+                <div class="status-message status-info">
+                    Arrastra sobre la imagen para seleccionar el área a conservar. Puedes ajustar el rectángulo arrastrando sus esquinas.
+                </div>
+                <div class="preview-container">
+                    <canvas id="cropCanvasAnverso"></canvas>
+                </div>
+                <div class="crop-controls">
+                    <button class="btn" onclick="resetCropAnverso()">↺ Reiniciar selección</button>
+                    <button class="btn btn-secondary" onclick="skipCropAnverso()">Omitir recorte</button>
+                    <button class="btn btn-success" onclick="applyCropAnverso()">✓ Aplicar recorte</button>
+                </div>
+            </div>
+
+            <!-- Paso 3: Recortar reverso -->
+            <div class="card hidden" id="cropReversoSection">
+                <h2>✂️ Paso 3: Recortar reverso (opcional)</h2>
+                <div class="status-message status-info">
+                    Arrastra sobre la imagen para seleccionar el área a conservar. Puedes ajustar el rectángulo arrastrando sus esquinas.
+                </div>
+                <div class="preview-container">
+                    <canvas id="cropCanvasReverso"></canvas>
+                </div>
+                <div class="crop-controls">
+                    <button class="btn" onclick="resetCropReverso()">↺ Reiniciar selección</button>
+                    <button class="btn btn-secondary" onclick="skipCropReverso()">Omitir recorte</button>
+                    <button class="btn btn-success" onclick="applyCropReverso()">✓ Aplicar recorte</button>
+                </div>
+            </div>
+
+            <!-- Paso 4: Configurar y procesar -->
+            <div class="card hidden" id="processSection">
+                <h2>⚙️ Paso 4: Configurar y procesar</h2>
+
+                <!-- Vista previa con toggle -->
+                <div style="margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="color: #495057; margin: 0;">Vista previa en tiempo real</h3>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: white; padding: 8px 15px; border-radius: 20px; border: 2px solid #dee2e6; transition: all 0.3s;" id="showAreasLabel">
+                            <input type="checkbox" id="showBlurAreas" onchange="toggleAreaDisplay()">
+                            <span style="font-size: 0.9em; font-weight: 600;">Mostrar áreas sin difuminar</span>
+                        </label>
+                    </div>
+                    <div class="side-by-side">
+                        <div>
+                            <h4 style="margin-bottom: 10px; color: #495057; font-size: 1em;">Anverso</h4>
+                            <canvas id="previewCanvasAnverso" style="max-width: 100%; height: auto; border: 2px solid #dee2e6; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 10px; color: #495057; font-size: 1em;">Reverso</h4>
+                            <canvas id="previewCanvasReverso" style="max-width: 100%; height: auto; border: 2px solid #dee2e6; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"></canvas>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; font-size: 0.85em; color: #6c757d;">
+                        <p style="margin-bottom: 5px;">✨ La previsualización se actualiza automáticamente al cambiar cualquier parámetro</p>
+                        <p style="margin: 0; font-weight: 600; color: #667eea;">
+                            💡 Activa "Mostrar áreas sin difuminar" y arrastra los rectángulos para ajustar posición y tamaño
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Configuración general -->
+                <div class="input-group" style="background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <label for="standardWidth">Ancho estándar de salida (píxeles):</label>
+                    <input type="number" id="standardWidth" value="850" min="400" max="2000" step="50">
+                    <p style="font-size: 0.85em; color: #6c757d; margin-top: 5px;">Las imágenes se redimensionarán a este ancho después del recorte (manteniendo proporción)</p>
+                </div>
+
+                <!-- Configuración de texto -->
+                <div class="text-overlay-config">
+                    <h3 style="margin-bottom: 15px; color: #495057;">Texto sobre la foto</h3>
+                    <div class="input-group">
+                        <label for="overlayText">Texto a mostrar:</label>
+                        <input type="text" id="overlayText" value="copia para el hotel" placeholder="Escribe el texto aquí">
+                    </div>
+                    <div class="side-by-side">
+                        <div class="input-group">
+                            <label for="fontSize">Tamaño de fuente (% del ancho):</label>
+                            <input type="number" id="fontSize" value="2.8" step="0.1" min="0.5" max="10">
+                        </div>
+                        <div class="input-group">
+                            <label for="textColor">Color del texto:</label>
+                            <select id="textColor">
+                                <option value="red">Rojo</option>
+                                <option value="black">Negro</option>
+                                <option value="white">Blanco</option>
+                                <option value="blue">Azul</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Áreas de difuminado -->
+                <div class="blur-areas">
+                    <h3 style="margin-bottom: 15px; color: #495057;">Áreas a difuminar (anverso)</h3>
+                    <div style="background: #e7f3ff; border-left: 4px solid #667eea; padding: 12px; margin-bottom: 15px; border-radius: 5px;">
+                        <p style="font-size: 0.9em; color: #495057; margin: 0;">
+                            <strong>💡 Consejo:</strong> Activa el checkbox <strong>"Mostrar áreas sin difuminar"</strong> arriba y
+                            <strong>arrastra los rectángulos con el ratón</strong> para ajustar fácilmente la posición y tamaño.
+                            También puedes editar los valores manualmente aquí (en porcentajes).
+                        </p>
+                    </div>
+                    <div class="blur-area-item">
+                        <label>
+                            <input type="checkbox" id="blurFoto" checked> Foto del titular
+                        </label>
+                        <div class="blur-area-controls">
+                            <div>
+                                <label style="font-size: 0.9em;">X (%):</label>
+                                <input type="number" id="fotoX" value="5" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Y (%):</label>
+                                <input type="number" id="fotoY" value="16" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Ancho (%):</label>
+                                <input type="number" id="fotoWidth" value="33" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Alto (%):</label>
+                                <input type="number" id="fotoHeight" value="68" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="blur-area-item">
+                        <label>
+                            <input type="checkbox" id="blurFirma" checked> Firma
+                        </label>
+                        <div class="blur-area-controls">
+                            <div>
+                                <label style="font-size: 0.9em;">X (%):</label>
+                                <input type="number" id="firmaX" value="40" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Y (%):</label>
+                                <input type="number" id="firmaY" value="76" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Ancho (%):</label>
+                                <input type="number" id="firmaWidth" value="25" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Alto (%):</label>
+                                <input type="number" id="firmaHeight" value="18" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 20px 0 15px; color: #495057;">Áreas a difuminar (reverso)</h3>
+                    <div style="background: #e7f3ff; border-left: 4px solid #667eea; padding: 12px; margin-bottom: 15px; border-radius: 5px;">
+                        <p style="font-size: 0.9em; color: #495057; margin: 0;">
+                            <strong>💡 Consejo:</strong> Arrastra los rectángulos en la previsualización para ajustar la posición y tamaño fácilmente.
+                        </p>
+                    </div>
+                    <div class="blur-area-item">
+                        <label>
+                            <input type="checkbox" id="blurEquipo" checked> Texto "EQUIPO" vertical
+                        </label>
+                        <div class="blur-area-controls">
+                            <div>
+                                <label style="font-size: 0.9em;">X (%):</label>
+                                <input type="number" id="equipoX" value="5" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Y (%):</label>
+                                <input type="number" id="equipoY" value="30" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Ancho (%):</label>
+                                <input type="number" id="equipoWidth" value="5" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.9em;">Alto (%):</label>
+                                <input type="number" id="equipoHeight" value="30" step="0.1" min="0" max="100" style="padding: 5px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Intensidad del difuminado -->
+                <div class="input-group" style="margin-top: 20px;">
+                    <label for="blurIntensity">Intensidad del difuminado:</label>
+                    <input type="number" id="blurIntensity" value="20" min="5" max="50" placeholder="Valor entre 5 y 50">
+                </div>
+
+                <!-- Botones de acción -->
+                <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button class="btn" onclick="processImages()" style="font-size: 1.1em; padding: 15px 40px;">
+                        🎨 Procesar imágenes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección de descarga -->
+            <div class="card hidden" id="downloadSection">
+                <h2>💾 Descargar imágenes procesadas</h2>
+                <div class="status-message status-success">
+                    ¡Imágenes procesadas exitosamente! Ya puedes descargarlas.
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="downloadAnverso()" style="font-size: 1.1em; padding: 15px 40px;">
+                        ⬇️ Descargar Anverso
+                    </button>
+                    <button class="btn btn-success" onclick="downloadReverso()" style="font-size: 1.1em; padding: 15px 40px;">
+                        ⬇️ Descargar Reverso
+                    </button>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn" onclick="resetAll()" style="background: #6c757d;">
+                        🔄 Procesar nuevo DNI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let anversoImage = null;
+        let reversoImage = null;
+        let croppedAnverso = null;
+        let croppedReverso = null;
+        let processedAnverso = null;
+        let processedReverso = null;
+
+        // Ancho estándar para redimensionar (típico DNI escaneado)
+        const STANDARD_WIDTH = 850;
+
+        // Variables para el sistema de edición de áreas
+        let editingState = {
+            anverso: {
+                canvas: null,
+                dragging: false,
+                resizing: false,
+                selectedArea: null,
+                resizeHandle: null,
+                startX: 0,
+                startY: 0,
+                scale: 1
+            },
+            reverso: {
+                canvas: null,
+                dragging: false,
+                resizing: false,
+                selectedArea: null,
+                resizeHandle: null,
+                startX: 0,
+                startY: 0,
+                scale: 1
+            }
+        };
+
+        // Variables para el recorte
+        let cropState = {
+            anverso: {
+                canvas: null,
+                ctx: null,
+                image: null,
+                selecting: false,
+                startX: 0,
+                startY: 0,
+                currentX: 0,
+                currentY: 0,
+                cropRect: null
+            },
+            reverso: {
+                canvas: null,
+                ctx: null,
+                image: null,
+                selecting: false,
+                startX: 0,
+                startY: 0,
+                currentX: 0,
+                currentY: 0,
+                cropRect: null
+            }
+        };
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload('fileAnverso', 'uploadAnverso', handleAnversoUpload);
+            setupFileUpload('fileReverso', 'uploadReverso', handleReversoUpload);
+        });
+
+        function setupFileUpload(inputId, zoneId, handler) {
+            const input = document.getElementById(inputId);
+            const zone = document.getElementById(zoneId);
+
+            input.addEventListener('change', handler);
+
+            // Drag and drop
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('active');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('active');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('active');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    handler();
+                }
+            });
+        }
+
+        function handleAnversoUpload() {
+            const file = document.getElementById('fileAnverso').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        anversoImage = img;
+                        document.getElementById('uploadAnverso').innerHTML = '<p style="color: #28a745; font-size: 2em;">✓</p><p><strong>Anverso cargado</strong></p>';
+                        checkBothUploaded();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleReversoUpload() {
+            const file = document.getElementById('fileReverso').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        reversoImage = img;
+                        document.getElementById('uploadReverso').innerHTML = '<p style="color: #28a745; font-size: 2em;">✓</p><p><strong>Reverso cargado</strong></p>';
+                        checkBothUploaded();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function checkBothUploaded() {
+            if (anversoImage && reversoImage) {
+                updateStep(1, 'completed');
+                updateStep(2, 'active');
+                document.getElementById('line1').classList.add('completed');
+                showCropAnversoSection();
+            }
+        }
+
+        function showCropAnversoSection() {
+            document.getElementById('cropAnversoSection').classList.remove('hidden');
+            initCropCanvas('anverso', anversoImage);
+            document.getElementById('cropAnversoSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function initCropCanvas(side, image) {
+            const canvas = document.getElementById(side === 'anverso' ? 'cropCanvasAnverso' : 'cropCanvasReverso');
+            const ctx = canvas.getContext('2d');
+
+            // Ajustar tamaño del canvas
+            const maxWidth = 800;
+            const scale = Math.min(1, maxWidth / image.width);
+            canvas.width = image.width * scale;
+            canvas.height = image.height * scale;
+
+            cropState[side].canvas = canvas;
+            cropState[side].ctx = ctx;
+            cropState[side].image = image;
+            cropState[side].scale = scale;
+            cropState[side].cropRect = {
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                height: canvas.height
+            };
+
+            drawCropCanvas(side);
+            setupCropEvents(side);
+        }
+
+        function drawCropCanvas(side) {
+            const state = cropState[side];
+            const ctx = state.ctx;
+            const canvas = state.canvas;
+
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar imagen
+            ctx.drawImage(state.image, 0, 0, canvas.width, canvas.height);
+
+            // Dibujar overlay oscuro
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Si hay selección, mostrar área clara
+            if (state.cropRect) {
+                const rect = state.cropRect;
+                ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+                ctx.drawImage(state.image,
+                    rect.x / state.scale, rect.y / state.scale,
+                    rect.width / state.scale, rect.height / state.scale,
+                    rect.x, rect.y, rect.width, rect.height);
+
+                // Dibujar borde de selección
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+                // Dibujar esquinas
+                const cornerSize = 10;
+                ctx.fillStyle = '#667eea';
+                ctx.fillRect(rect.x - cornerSize/2, rect.y - cornerSize/2, cornerSize, cornerSize);
+                ctx.fillRect(rect.x + rect.width - cornerSize/2, rect.y - cornerSize/2, cornerSize, cornerSize);
+                ctx.fillRect(rect.x - cornerSize/2, rect.y + rect.height - cornerSize/2, cornerSize, cornerSize);
+                ctx.fillRect(rect.x + rect.width - cornerSize/2, rect.y + rect.height - cornerSize/2, cornerSize, cornerSize);
+            }
+        }
+
+        function setupCropEvents(side) {
+            const canvas = cropState[side].canvas;
+            const state = cropState[side];
+
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                state.startX = e.clientX - rect.left;
+                state.startY = e.clientY - rect.top;
+                state.selecting = true;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!state.selecting) return;
+
+                const rect = canvas.getBoundingClientRect();
+                state.currentX = e.clientX - rect.left;
+                state.currentY = e.clientY - rect.top;
+
+                const x = Math.min(state.startX, state.currentX);
+                const y = Math.min(state.startY, state.currentY);
+                const width = Math.abs(state.currentX - state.startX);
+                const height = Math.abs(state.currentY - state.startY);
+
+                state.cropRect = { x, y, width, height };
+                drawCropCanvas(side);
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                state.selecting = false;
+            });
+
+            // Touch events para móvil
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                state.startX = touch.clientX - rect.left;
+                state.startY = touch.clientY - rect.top;
+                state.selecting = true;
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!state.selecting) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                state.currentX = touch.clientX - rect.left;
+                state.currentY = touch.clientY - rect.top;
+
+                const x = Math.min(state.startX, state.currentX);
+                const y = Math.min(state.startY, state.currentY);
+                const width = Math.abs(state.currentX - state.startX);
+                const height = Math.abs(state.currentY - state.startY);
+
+                state.cropRect = { x, y, width, height };
+                drawCropCanvas(side);
+            });
+
+            canvas.addEventListener('touchend', () => {
+                state.selecting = false;
+            });
+        }
+
+        function resetCropAnverso() {
+            initCropCanvas('anverso', anversoImage);
+        }
+
+        function resetCropReverso() {
+            initCropCanvas('reverso', reversoImage);
+        }
+
+        function skipCropAnverso() {
+            croppedAnverso = resizeToStandard(anversoImage);
+            proceedToReverso();
+        }
+
+        function applyCropAnverso() {
+            const state = cropState.anverso;
+            if (!state.cropRect || state.cropRect.width < 10 || state.cropRect.height < 10) {
+                alert('Por favor selecciona un área válida para recortar');
+                return;
+            }
+
+            // Crear canvas temporal para el recorte
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            const rect = state.cropRect;
+            tempCanvas.width = rect.width / state.scale;
+            tempCanvas.height = rect.height / state.scale;
+
+            tempCtx.drawImage(state.image,
+                rect.x / state.scale, rect.y / state.scale,
+                tempCanvas.width, tempCanvas.height,
+                0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Convertir a imagen y redimensionar
+            const img = new Image();
+            img.onload = function() {
+                croppedAnverso = resizeToStandard(img);
+                proceedToReverso();
+            };
+            img.src = tempCanvas.toDataURL();
+        }
+
+        function proceedToReverso() {
+            document.getElementById('cropAnversoSection').classList.add('hidden');
+            updateStep(2, 'completed');
+            updateStep(3, 'active');
+            document.getElementById('line2').classList.add('completed');
+            document.getElementById('cropReversoSection').classList.remove('hidden');
+            initCropCanvas('reverso', reversoImage);
+            document.getElementById('cropReversoSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function skipCropReverso() {
+            croppedReverso = resizeToStandard(reversoImage);
+            proceedToProcess();
+        }
+
+        function applyCropReverso() {
+            const state = cropState.reverso;
+            if (!state.cropRect || state.cropRect.width < 10 || state.cropRect.height < 10) {
+                alert('Por favor selecciona un área válida para recortar');
+                return;
+            }
+
+            // Crear canvas temporal para el recorte
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            const rect = state.cropRect;
+            tempCanvas.width = rect.width / state.scale;
+            tempCanvas.height = rect.height / state.scale;
+
+            tempCtx.drawImage(state.image,
+                rect.x / state.scale, rect.y / state.scale,
+                tempCanvas.width, tempCanvas.height,
+                0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Convertir a imagen y redimensionar
+            const img = new Image();
+            img.onload = function() {
+                croppedReverso = resizeToStandard(img);
+                proceedToProcess();
+            };
+            img.src = tempCanvas.toDataURL();
+        }
+
+        function resizeToStandard(image) {
+            // Redimensionar imagen a ancho estándar manteniendo proporción
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Obtener ancho estándar del input o usar valor por defecto
+            const standardWidth = parseInt(document.getElementById('standardWidth')?.value) || STANDARD_WIDTH;
+
+            const scale = standardWidth / image.width;
+            canvas.width = standardWidth;
+            canvas.height = image.height * scale;
+
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            // Convertir a imagen
+            const resizedImg = new Image();
+            resizedImg.src = canvas.toDataURL();
+            return resizedImg;
+        }
+
+        function proceedToProcess() {
+            document.getElementById('cropReversoSection').classList.add('hidden');
+            updateStep(3, 'completed');
+            updateStep(4, 'active');
+            document.getElementById('line3').classList.add('completed');
+            document.getElementById('processSection').classList.remove('hidden');
+
+            // Inicializar previsualizaciones
+            setupPreviewListeners();
+            updatePreviews();
+
+            document.getElementById('processSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function setupPreviewListeners() {
+            // Lista de todos los controles que afectan la previsualización
+            const controls = [
+                'overlayText', 'fontSize', 'textColor',
+                'blurFoto', 'fotoX', 'fotoY', 'fotoWidth', 'fotoHeight',
+                'blurFirma', 'firmaX', 'firmaY', 'firmaWidth', 'firmaHeight',
+                'blurEquipo', 'equipoX', 'equipoY', 'equipoWidth', 'equipoHeight',
+                'blurIntensity'
+            ];
+
+            // Debounce para evitar demasiadas actualizaciones
+            let timeoutId;
+            const debouncedUpdate = () => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => updatePreviews(), 300);
+            };
+
+            controls.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.addEventListener('change', updatePreviews);
+                    } else {
+                        element.addEventListener('input', debouncedUpdate);
+                    }
+                }
+            });
+        }
+
+        function toggleAreaDisplay() {
+            const label = document.getElementById('showAreasLabel');
+            const checkbox = document.getElementById('showBlurAreas');
+
+            if (checkbox.checked) {
+                label.style.background = '#667eea';
+                label.style.borderColor = '#667eea';
+                label.style.color = 'white';
+                label.classList.add('active');
+            } else {
+                label.style.background = 'white';
+                label.style.borderColor = '#dee2e6';
+                label.style.color = '#495057';
+                label.classList.remove('active');
+            }
+
+            updatePreviews();
+        }
+
+        function updatePreviews() {
+            updatePreview(croppedAnverso, 'anverso');
+            updatePreview(croppedReverso, 'reverso');
+        }
+
+        function updatePreview(image, side) {
+            const canvasId = side === 'anverso' ? 'previewCanvasAnverso' : 'previewCanvasReverso';
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+
+            // Ajustar tamaño del canvas para la previsualización
+            const maxWidth = 500;
+            const scale = Math.min(1, maxWidth / image.width);
+            canvas.width = image.width * scale;
+            canvas.height = image.height * scale;
+
+            // Guardar referencia del canvas y escala en editingState
+            editingState[side].canvas = canvas;
+            editingState[side].scale = scale;
+
+            // Configurar event listeners si no están configurados
+            if (!canvas.dataset.listenersAdded) {
+                setupCanvasInteraction(canvas, side, image);
+                canvas.dataset.listenersAdded = 'true';
+            }
+
+            // Dibujar imagen original
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            const showAreas = document.getElementById('showBlurAreas').checked;
+            const blurIntensity = parseInt(document.getElementById('blurIntensity').value) || 20;
+
+            if (side === 'anverso') {
+                // Procesar foto
+                if (document.getElementById('blurFoto').checked) {
+                    const xPercent = parseFloat(document.getElementById('fotoX').value);
+                    const yPercent = parseFloat(document.getElementById('fotoY').value);
+                    const widthPercent = parseFloat(document.getElementById('fotoWidth').value);
+                    const heightPercent = parseFloat(document.getElementById('fotoHeight').value);
+
+                    const x = Math.round((xPercent / 100) * image.width * scale);
+                    const y = Math.round((yPercent / 100) * image.height * scale);
+                    const width = Math.round((widthPercent / 100) * image.width * scale);
+                    const height = Math.round((heightPercent / 100) * image.height * scale);
+
+                    if (showAreas) {
+                        // Mostrar rectángulo sin difuminar
+                        drawAreaOutline(ctx, x, y, width, height, 'red', 'Foto');
+                    } else {
+                        // Aplicar difuminado
+                        applyBlurToCanvas(ctx, x, y, width, height, Math.max(5, Math.round(blurIntensity * scale)));
+
+                        // Añadir texto
+                        addTextOverlayToCanvas(ctx, x, y, width, height, scale);
+                    }
+                }
+
+                // Procesar firma
+                if (document.getElementById('blurFirma').checked) {
+                    const xPercent = parseFloat(document.getElementById('firmaX').value);
+                    const yPercent = parseFloat(document.getElementById('firmaY').value);
+                    const widthPercent = parseFloat(document.getElementById('firmaWidth').value);
+                    const heightPercent = parseFloat(document.getElementById('firmaHeight').value);
+
+                    const x = Math.round((xPercent / 100) * image.width * scale);
+                    const y = Math.round((yPercent / 100) * image.height * scale);
+                    const width = Math.round((widthPercent / 100) * image.width * scale);
+                    const height = Math.round((heightPercent / 100) * image.height * scale);
+
+                    if (showAreas) {
+                        drawAreaOutline(ctx, x, y, width, height, 'blue', 'Firma');
+                    } else {
+                        applyBlurToCanvas(ctx, x, y, width, height, Math.max(5, Math.round(blurIntensity * scale)));
+                    }
+                }
+            } else {
+                // Procesar EQUIPO
+                if (document.getElementById('blurEquipo').checked) {
+                    const xPercent = parseFloat(document.getElementById('equipoX').value);
+                    const yPercent = parseFloat(document.getElementById('equipoY').value);
+                    const widthPercent = parseFloat(document.getElementById('equipoWidth').value);
+                    const heightPercent = parseFloat(document.getElementById('equipoHeight').value);
+
+                    const x = Math.round((xPercent / 100) * image.width * scale);
+                    const y = Math.round((yPercent / 100) * image.height * scale);
+                    const width = Math.round((widthPercent / 100) * image.width * scale);
+                    const height = Math.round((heightPercent / 100) * image.height * scale);
+
+                    if (showAreas) {
+                        drawAreaOutline(ctx, x, y, width, height, 'green', 'EQUIPO');
+                    } else {
+                        applyBlurToCanvas(ctx, x, y, width, height, Math.max(5, Math.round(blurIntensity * scale)));
+                    }
+                }
+            }
+        }
+
+        function drawAreaOutline(ctx, x, y, width, height, color, label) {
+            ctx.save();
+
+            // Dibujar fondo semitransparente del área
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.15;
+            ctx.fillRect(x, y, width, height);
+
+            // Dibujar rectángulo de borde
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+            ctx.strokeRect(x, y, width, height);
+
+            // Dibujar manijas de redimensionamiento (círculos en las esquinas)
+            const handleSize = 10;
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+
+            const handles = [
+                { x: x, y: y, cursor: 'nw-resize' },
+                { x: x + width, y: y, cursor: 'ne-resize' },
+                { x: x, y: y + height, cursor: 'sw-resize' },
+                { x: x + width, y: y + height, cursor: 'se-resize' }
+            ];
+
+            handles.forEach(handle => {
+                ctx.beginPath();
+                ctx.arc(handle.x, handle.y, handleSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            });
+
+            // Fondo para el label
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.9;
+            const labelPadding = 8;
+            const labelHeight = 24;
+            const labelWidth = ctx.measureText(label).width + labelPadding * 2;
+            const labelX = x + (width - labelWidth) / 2;
+            const labelY = y - labelHeight - 5;
+
+            // Dibujar label arriba del área (rectángulo con esquinas redondeadas)
+            ctx.beginPath();
+            const radius = 5;
+            ctx.moveTo(labelX + radius, labelY);
+            ctx.lineTo(labelX + labelWidth - radius, labelY);
+            ctx.quadraticCurveTo(labelX + labelWidth, labelY, labelX + labelWidth, labelY + radius);
+            ctx.lineTo(labelX + labelWidth, labelY + labelHeight - radius);
+            ctx.quadraticCurveTo(labelX + labelWidth, labelY + labelHeight, labelX + labelWidth - radius, labelY + labelHeight);
+            ctx.lineTo(labelX + radius, labelY + labelHeight);
+            ctx.quadraticCurveTo(labelX, labelY + labelHeight, labelX, labelY + labelHeight - radius);
+            ctx.lineTo(labelX, labelY + radius);
+            ctx.quadraticCurveTo(labelX, labelY, labelX + radius, labelY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Texto del label
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 13px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, labelX + labelWidth / 2, labelY + labelHeight / 2);
+
+            ctx.restore();
+        }
+
+        function applyBlurToCanvas(ctx, x, y, width, height, intensity) {
+            if (width <= 0 || height <= 0) return;
+
+            const imageData = ctx.getImageData(x, y, width, height);
+            const blurred = stackBlur(imageData, intensity);
+            ctx.putImageData(blurred, x, y);
+        }
+
+        function addTextOverlayToCanvas(ctx, x, y, width, height, scale) {
+            const text = document.getElementById('overlayText').value;
+            if (!text) return;
+
+            const fontSizePercent = parseFloat(document.getElementById('fontSize').value);
+            const color = document.getElementById('textColor').value;
+
+            // Calcular tamaño de fuente basado en el canvas de previsualización
+            const fontSize = Math.round((fontSizePercent / 100) * ctx.canvas.width);
+
+            ctx.save();
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = Math.max(2, fontSize * 0.1);
+            ctx.shadowOffsetX = Math.max(1, fontSize * 0.05);
+            ctx.shadowOffsetY = Math.max(1, fontSize * 0.05);
+
+            const textX = x + width / 2;
+            const textY = y + height / 2;
+            ctx.fillText(text, textX, textY);
+
+            ctx.restore();
+        }
+
+        function setupCanvasInteraction(canvas, side, image) {
+            const state = editingState[side];
+
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+
+            function getAreas() {
+                const areas = [];
+
+                if (side === 'anverso') {
+                    if (document.getElementById('blurFoto').checked) {
+                        areas.push({
+                            id: 'foto',
+                            xId: 'fotoX', yId: 'fotoY', widthId: 'fotoWidth', heightId: 'fotoHeight',
+                            color: 'red', label: 'Foto'
+                        });
+                    }
+                    if (document.getElementById('blurFirma').checked) {
+                        areas.push({
+                            id: 'firma',
+                            xId: 'firmaX', yId: 'firmaY', widthId: 'firmaWidth', heightId: 'firmaHeight',
+                            color: 'blue', label: 'Firma'
+                        });
+                    }
+                } else {
+                    if (document.getElementById('blurEquipo').checked) {
+                        areas.push({
+                            id: 'equipo',
+                            xId: 'equipoX', yId: 'equipoY', widthId: 'equipoWidth', heightId: 'equipoHeight',
+                            color: 'green', label: 'EQUIPO'
+                        });
+                    }
+                }
+
+                return areas.map(area => {
+                    const xPercent = parseFloat(document.getElementById(area.xId).value);
+                    const yPercent = parseFloat(document.getElementById(area.yId).value);
+                    const widthPercent = parseFloat(document.getElementById(area.widthId).value);
+                    const heightPercent = parseFloat(document.getElementById(area.heightId).value);
+
+                    return {
+                        ...area,
+                        x: Math.round((xPercent / 100) * image.width * state.scale),
+                        y: Math.round((yPercent / 100) * image.height * state.scale),
+                        width: Math.round((widthPercent / 100) * image.width * state.scale),
+                        height: Math.round((heightPercent / 100) * image.height * state.scale)
+                    };
+                });
+            }
+
+            function getResizeHandle(mousePos, area) {
+                const handleSize = 15;
+                const handles = [
+                    { x: area.x, y: area.y, type: 'nw' },
+                    { x: area.x + area.width, y: area.y, type: 'ne' },
+                    { x: area.x, y: area.y + area.height, type: 'sw' },
+                    { x: area.x + area.width, y: area.y + area.height, type: 'se' }
+                ];
+
+                for (let handle of handles) {
+                    const dist = Math.sqrt(
+                        Math.pow(mousePos.x - handle.x, 2) +
+                        Math.pow(mousePos.y - handle.y, 2)
+                    );
+                    if (dist < handleSize) {
+                        return handle.type;
+                    }
+                }
+                return null;
+            }
+
+            function isInsideArea(mousePos, area) {
+                return mousePos.x >= area.x &&
+                       mousePos.x <= area.x + area.width &&
+                       mousePos.y >= area.y &&
+                       mousePos.y <= area.y + area.height;
+            }
+
+            function updateCursor(mousePos) {
+                if (!document.getElementById('showBlurAreas').checked) {
+                    canvas.style.cursor = 'default';
+                    return;
+                }
+
+                const areas = getAreas();
+                for (let area of areas) {
+                    const handle = getResizeHandle(mousePos, area);
+                    if (handle) {
+                        canvas.style.cursor = handle + '-resize';
+                        return;
+                    }
+                    if (isInsideArea(mousePos, area)) {
+                        canvas.style.cursor = 'move';
+                        return;
+                    }
+                }
+                canvas.style.cursor = 'default';
+            }
+
+            function updateInputs(area) {
+                // Convertir píxeles a porcentajes
+                const xPercent = (area.x / state.scale / image.width) * 100;
+                const yPercent = (area.y / state.scale / image.height) * 100;
+                const widthPercent = (area.width / state.scale / image.width) * 100;
+                const heightPercent = (area.height / state.scale / image.height) * 100;
+
+                document.getElementById(area.xId).value = xPercent.toFixed(1);
+                document.getElementById(area.yId).value = yPercent.toFixed(1);
+                document.getElementById(area.widthId).value = widthPercent.toFixed(1);
+                document.getElementById(area.heightId).value = heightPercent.toFixed(1);
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                if (!document.getElementById('showBlurAreas').checked) return;
+
+                const mousePos = getMousePos(e);
+                const areas = getAreas();
+
+                for (let area of areas) {
+                    const handle = getResizeHandle(mousePos, area);
+                    if (handle) {
+                        state.resizing = true;
+                        state.resizeHandle = handle;
+                        state.selectedArea = area;
+                        state.startX = mousePos.x;
+                        state.startY = mousePos.y;
+                        state.originalArea = { ...area };
+                        return;
+                    }
+
+                    if (isInsideArea(mousePos, area)) {
+                        state.dragging = true;
+                        state.selectedArea = area;
+                        state.startX = mousePos.x - area.x;
+                        state.startY = mousePos.y - area.y;
+                        return;
+                    }
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const mousePos = getMousePos(e);
+
+                if (state.dragging && state.selectedArea) {
+                    const newX = Math.max(0, Math.min(mousePos.x - state.startX, canvas.width - state.selectedArea.width));
+                    const newY = Math.max(0, Math.min(mousePos.y - state.startY, canvas.height - state.selectedArea.height));
+
+                    state.selectedArea.x = newX;
+                    state.selectedArea.y = newY;
+
+                    updateInputs(state.selectedArea);
+                    updatePreviews();
+                } else if (state.resizing && state.selectedArea) {
+                    const dx = mousePos.x - state.startX;
+                    const dy = mousePos.y - state.startY;
+                    const orig = state.originalArea;
+
+                    let newX = orig.x;
+                    let newY = orig.y;
+                    let newWidth = orig.width;
+                    let newHeight = orig.height;
+
+                    switch (state.resizeHandle) {
+                        case 'nw':
+                            newX = Math.max(0, Math.min(orig.x + dx, orig.x + orig.width - 20));
+                            newY = Math.max(0, Math.min(orig.y + dy, orig.y + orig.height - 20));
+                            newWidth = orig.width - (newX - orig.x);
+                            newHeight = orig.height - (newY - orig.y);
+                            break;
+                        case 'ne':
+                            newY = Math.max(0, Math.min(orig.y + dy, orig.y + orig.height - 20));
+                            newWidth = Math.max(20, Math.min(orig.width + dx, canvas.width - orig.x));
+                            newHeight = orig.height - (newY - orig.y);
+                            break;
+                        case 'sw':
+                            newX = Math.max(0, Math.min(orig.x + dx, orig.x + orig.width - 20));
+                            newWidth = orig.width - (newX - orig.x);
+                            newHeight = Math.max(20, Math.min(orig.height + dy, canvas.height - orig.y));
+                            break;
+                        case 'se':
+                            newWidth = Math.max(20, Math.min(orig.width + dx, canvas.width - orig.x));
+                            newHeight = Math.max(20, Math.min(orig.height + dy, canvas.height - orig.y));
+                            break;
+                    }
+
+                    state.selectedArea.x = newX;
+                    state.selectedArea.y = newY;
+                    state.selectedArea.width = newWidth;
+                    state.selectedArea.height = newHeight;
+
+                    updateInputs(state.selectedArea);
+                    updatePreviews();
+                } else {
+                    updateCursor(mousePos);
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                state.dragging = false;
+                state.resizing = false;
+                state.selectedArea = null;
+                state.resizeHandle = null;
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                state.dragging = false;
+                state.resizing = false;
+                state.selectedArea = null;
+                state.resizeHandle = null;
+                canvas.style.cursor = 'default';
+            });
+        }
+
+        function processImages() {
+            // Procesar anverso
+            processedAnverso = processImage(croppedAnverso, 'anverso');
+
+            // Procesar reverso
+            processedReverso = processImage(croppedReverso, 'reverso');
+
+            // Mostrar sección de descarga
+            updateStep(4, 'completed');
+            document.getElementById('downloadSection').classList.remove('hidden');
+            document.getElementById('downloadSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function processImage(image, side) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            // Dibujar imagen original
+            ctx.drawImage(image, 0, 0);
+
+            // Aplicar difuminados
+            const blurIntensity = parseInt(document.getElementById('blurIntensity').value) || 20;
+
+            if (side === 'anverso') {
+                if (document.getElementById('blurFoto').checked) {
+                    // Convertir porcentajes a píxeles
+                    const xPercent = parseFloat(document.getElementById('fotoX').value);
+                    const yPercent = parseFloat(document.getElementById('fotoY').value);
+                    const widthPercent = parseFloat(document.getElementById('fotoWidth').value);
+                    const heightPercent = parseFloat(document.getElementById('fotoHeight').value);
+
+                    const x = Math.round((xPercent / 100) * canvas.width);
+                    const y = Math.round((yPercent / 100) * canvas.height);
+                    const width = Math.round((widthPercent / 100) * canvas.width);
+                    const height = Math.round((heightPercent / 100) * canvas.height);
+
+                    applyBlur(ctx, x, y, width, height, blurIntensity);
+
+                    // Añadir texto sobre la foto
+                    addTextOverlay(ctx, x, y, width, height);
+                }
+
+                if (document.getElementById('blurFirma').checked) {
+                    // Convertir porcentajes a píxeles
+                    const xPercent = parseFloat(document.getElementById('firmaX').value);
+                    const yPercent = parseFloat(document.getElementById('firmaY').value);
+                    const widthPercent = parseFloat(document.getElementById('firmaWidth').value);
+                    const heightPercent = parseFloat(document.getElementById('firmaHeight').value);
+
+                    const x = Math.round((xPercent / 100) * canvas.width);
+                    const y = Math.round((yPercent / 100) * canvas.height);
+                    const width = Math.round((widthPercent / 100) * canvas.width);
+                    const height = Math.round((heightPercent / 100) * canvas.height);
+
+                    applyBlur(ctx, x, y, width, height, blurIntensity);
+                }
+            } else {
+                if (document.getElementById('blurEquipo').checked) {
+                    // Convertir porcentajes a píxeles
+                    const xPercent = parseFloat(document.getElementById('equipoX').value);
+                    const yPercent = parseFloat(document.getElementById('equipoY').value);
+                    const widthPercent = parseFloat(document.getElementById('equipoWidth').value);
+                    const heightPercent = parseFloat(document.getElementById('equipoHeight').value);
+
+                    const x = Math.round((xPercent / 100) * canvas.width);
+                    const y = Math.round((yPercent / 100) * canvas.height);
+                    const width = Math.round((widthPercent / 100) * canvas.width);
+                    const height = Math.round((heightPercent / 100) * canvas.height);
+
+                    applyBlur(ctx, x, y, width, height, blurIntensity);
+                }
+            }
+
+            return canvas.toDataURL('image/png');
+        }
+
+        function applyBlur(ctx, x, y, width, height, intensity) {
+            // Extraer la región a difuminar
+            const imageData = ctx.getImageData(x, y, width, height);
+            const blurred = stackBlur(imageData, intensity);
+            ctx.putImageData(blurred, x, y);
+        }
+
+        function stackBlur(imageData, radius) {
+            // Implementación simplificada de blur gaussiano
+            const pixels = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+
+            // Blur horizontal
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const nx = x + dx;
+                        if (nx >= 0 && nx < width) {
+                            const idx = (y * width + nx) * 4;
+                            r += pixels[idx];
+                            g += pixels[idx + 1];
+                            b += pixels[idx + 2];
+                            a += pixels[idx + 3];
+                            count++;
+                        }
+                    }
+
+                    const idx = (y * width + x) * 4;
+                    pixels[idx] = r / count;
+                    pixels[idx + 1] = g / count;
+                    pixels[idx + 2] = b / count;
+                    pixels[idx + 3] = a / count;
+                }
+            }
+
+            // Blur vertical
+            for (let x = 0; x < width; x++) {
+                for (let y = 0; y < height; y++) {
+                    let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+                    for (let dy = -radius; dy <= radius; dy++) {
+                        const ny = y + dy;
+                        if (ny >= 0 && ny < height) {
+                            const idx = (ny * width + x) * 4;
+                            r += pixels[idx];
+                            g += pixels[idx + 1];
+                            b += pixels[idx + 2];
+                            a += pixels[idx + 3];
+                            count++;
+                        }
+                    }
+
+                    const idx = (y * width + x) * 4;
+                    pixels[idx] = r / count;
+                    pixels[idx + 1] = g / count;
+                    pixels[idx + 2] = b / count;
+                    pixels[idx + 3] = a / count;
+                }
+            }
+
+            return imageData;
+        }
+
+        function addTextOverlay(ctx, x, y, width, height) {
+            const text = document.getElementById('overlayText').value;
+            const fontSizePercent = parseFloat(document.getElementById('fontSize').value);
+            const color = document.getElementById('textColor').value;
+
+            // Calcular tamaño de fuente basado en porcentaje del ancho de la imagen
+            const fontSize = Math.round((fontSizePercent / 100) * ctx.canvas.width);
+
+            ctx.save();
+
+            // Configurar texto
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Añadir sombra para mejor legibilidad
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = Math.max(2, fontSize * 0.1);
+            ctx.shadowOffsetX = Math.max(1, fontSize * 0.05);
+            ctx.shadowOffsetY = Math.max(1, fontSize * 0.05);
+
+            // Dibujar texto en el centro de la foto
+            const textX = x + width / 2;
+            const textY = y + height / 2;
+            ctx.fillText(text, textX, textY);
+
+            ctx.restore();
+        }
+
+        function downloadAnverso() {
+            downloadImage(processedAnverso, 'DNI-anverso-procesado.png');
+        }
+
+        function downloadReverso() {
+            downloadImage(processedReverso, 'DNI-reverso-procesado.png');
+        }
+
+        function downloadImage(dataUrl, filename) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function updateStep(stepNum, status) {
+            const step = document.getElementById('step' + stepNum);
+            step.classList.remove('active', 'completed');
+            if (status) {
+                step.classList.add(status);
+            }
+        }
+
+        function resetAll() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
