@@ -50,18 +50,20 @@ Con esta herramienta puedes generar copias de tu DNI **marcadas específicamente
 
 ### Paso a paso
 
-1. **Abre el archivo**: Haz doble clic en `dni-processor.html`
+1. **Descarga y abre el archivo**: Haz doble clic en `dni-processor.html`
+   
+3. **O usa la versión online**: https://alfem.github.io/odni/  (puedes comprobar que no hace ninguna conexión a ningún servidor)
 
-2. **Sube las imágenes**:
+4. **Sube las imágenes**:
    - Carga el anverso (cara frontal) del DNI
    - Carga el reverso (cara trasera) del DNI
 
-3. **Recorta las imágenes** (opcional):
+5. **Recorta las imágenes** (opcional):
    - Arrastra sobre la imagen para seleccionar el área útil
    - Elimina márgenes o fondos innecesarios
    - Puedes omitir este paso si no es necesario
 
-4. **Configura el procesamiento**:
+6. **Configura el procesamiento**:
    - Activa el checkbox "Mostrar áreas sin difuminar"
    - **Arrastra los rectángulos de colores** para ajustar las áreas:
      - 🔴 Rojo = Foto del titular
@@ -70,11 +72,11 @@ Con esta herramienta puedes generar copias de tu DNI **marcadas específicamente
    - Edita el texto que aparecerá sobre la foto
    - Ajusta el tamaño de fuente y color si es necesario
 
-5. **Vista previa**:
+7. **Vista previa**:
    - Desactiva "Mostrar áreas sin difuminar" para ver el resultado final
    - Comprueba que todo está correcto
 
-6. **Procesa y descarga**:
+8. **Procesa y descarga**:
    - Haz clic en "🎨 Procesar imágenes"
    - Descarga el anverso procesado
    - Descarga el reverso procesado
