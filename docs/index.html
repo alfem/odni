@@ -32,6 +32,28 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+
+        .github-link {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 8px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .github-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+            transform: translateY(-2px);
         }
 
         h1 {
@@ -311,6 +333,7 @@
 <body>
     <div class="container">
         <header>
+            <a href="https://github.com/alfem/odni/" target="_blank" class="github-link">Código fuente a tu disposición</a>
             <h1>Procesador de DNI</h1>
             <p class="subtitle">Difumina áreas sensibles y añade marcas de agua - 100% Offline</p>
         </header>
